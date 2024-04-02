@@ -14,10 +14,11 @@ exports_files(glob([
 ]))
 
 cc_binary(
-    name = "label_image",
+    name = "realm_inference",
     srcs = [
         "get_top_n.h",
         "get_top_n_impl.h",
+	"VM_signalling.cc",
         "label_image.cc",
     ],
     linkopts = tflite_linkopts() + select({
@@ -52,6 +53,7 @@ cc_library(
     hdrs = [
         "bitmap_helpers.h",
         "bitmap_helpers_impl.h",
+	"VM_signalling.h",
         "label_image.h",
         "log.h",
     ],

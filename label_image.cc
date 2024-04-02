@@ -14,6 +14,7 @@ limitations under the License.
 ==============================================================================*/
 
 #include "tensorflow/lite/examples/label_image/label_image.h"
+#include "tensorflow/lite/examples/label_image/VM_signalling.h"
 
 #include <fcntl.h>      // NOLINT(build/include_order)
 #include <getopt.h>     // NOLINT(build/include_order)
@@ -203,15 +204,14 @@ void PrintProfilingInfo(const profiling::ProfileEvent* e,
                    static_cast<BuiltinOperator>(registration.builtin_code));
 }
 
-void RunInference(Settings* settings,
-                  const DelegateProviders& delegate_providers) {
+void RunInference(Settings* settings, const DelegateProviders& delegate_providers) {
   if (!settings->model_name.c_str()) {
     LOG(ERROR) << "no model file name";
     exit(-1);
   }
-
-  std::unique_ptr<tflite::FlatBufferModel> model;
   std::unique_ptr<tflite::Interpreter> interpreter;
+  std::unique_ptr<tflite::FlatBufferModel> model;
+  //std::unique_ptr<tflite::Interpreter> interpreter;
   model = tflite::FlatBufferModel::BuildFromFile(settings->model_name.c_str());
   if (!model) {
     LOG(ERROR) << "Failed to mmap model " << settings->model_name;
@@ -220,7 +220,7 @@ void RunInference(Settings* settings,
   settings->model = model.get();
   LOG(INFO) << "Loaded model " << settings->model_name;
   model->error_reporter();
-  LOG(INFO) << "resolved reporter";
+  //LOG(INFO) << "resolved reporter";
 
   tflite::ops::builtin::BuiltinOpResolver resolver;
 
@@ -231,7 +231,7 @@ void RunInference(Settings* settings,
   }
 
   interpreter->SetAllowFp16PrecisionForFp32(settings->allow_fp16);
-
+ // LOG(INFO) << "Interpreter was built";
   if (settings->verbose) {
     LOG(INFO) << "tensors size: " << interpreter->tensors_size();
     LOG(INFO) << "nodes size: " << interpreter->nodes_size();
@@ -248,17 +248,24 @@ void RunInference(Settings* settings,
                   << interpreter->tensor(i)->params.zero_point;
     }
   }
-
+  //LOG(INFO) << "Number of threads" << settings->number_of_threads;
   if (settings->number_of_threads != -1) {
     interpreter->SetNumThreads(settings->number_of_threads);
   }
-
+  //LOG(INFO) << "Number of threads1 " << settings->number_of_threads;
   int image_width = 224;
   int image_height = 224;
   int image_channels = 3;
+  std::string input_address;
+  for (int i = 1; i <= 40; i++){
+
+  LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
+  settings->input_bmp_name = checkSystemStateAndGetFilename();
+
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
-
+  LOG(INFO) << "settings->input_bmp_name: " << settings->input_bmp_name;
+  
   int input = interpreter->inputs()[0];
   if (settings->verbose) LOG(INFO) << "input: " << input;
 
@@ -273,10 +280,13 @@ void RunInference(Settings* settings,
   auto profiler = std::make_unique<profiling::Profiler>(
       settings->max_profiling_buffer_entries);
   interpreter->SetProfiler(profiler.get());
-
+  //LOG(INFO) << "SetProfiler";
   auto delegates = delegate_providers.CreateAllDelegates();
+  //LOG(INFO) << "CreateAllDelegates ";
   for (auto& delegate : delegates) {
+    //LOG(INFO) << "delegateee";
     const auto delegate_name = delegate.provider->GetName();
+    //LOG(INFO) << "getname";
     if (interpreter->ModifyGraphWithDelegate(std::move(delegate.delegate)) !=
         kTfLiteOk) {
       LOG(ERROR) << "Failed to apply " << delegate_name << " delegate.";
@@ -285,12 +295,12 @@ void RunInference(Settings* settings,
       LOG(INFO) << "Applied " << delegate_name << " delegate.";
     }
   }
-
+  //LOG(INFO) << "Tensorallocation";
   if (interpreter->AllocateTensors() != kTfLiteOk) {
     LOG(ERROR) << "Failed to allocate tensors!";
     exit(-1);
   }
-
+  //LOG(INFO) << "verbose";
   if (settings->verbose) PrintInterpreterState(interpreter.get());
 
   // get input dimension from the input tensor metadata
@@ -302,6 +312,7 @@ void RunInference(Settings* settings,
 
   settings->input_type = interpreter->tensor(input)->type;
   switch (settings->input_type) {
+    LOG(INFO) << "Resizing";
     case kTfLiteFloat32:
       resize<float>(interpreter->typed_tensor<float>(input), in.data(),
                     image_height, image_width, image_channels, wanted_height,
@@ -324,27 +335,28 @@ void RunInference(Settings* settings,
   }
 
   if (settings->profiling) profiler->StartProfiling();
-  for (int i = 0; i < settings->number_of_warmup_runs; i++) {
-    if (interpreter->Invoke() != kTfLiteOk) {
-      LOG(ERROR) << "Failed to invoke tflite!";
-      exit(-1);
-    }
-  }
+//  for (int i = 0; i < settings->number_of_warmup_runs; i++) {
+ //     LOG(INFO) << "Warmup";
+   // if (interpreter->Invoke() != kTfLiteOk) {
+     // LOG(ERROR) << "Failed to invoke tflite!";
+     // exit(-1);
+    //}
+  //}
 
-  struct timeval start_time, stop_time;
-  gettimeofday(&start_time, nullptr);
+  //struct timeval start_time, stop_time;
+  //gettimeofday(&start_time, nullptr);
   for (int i = 0; i < settings->loop_count; i++) {
     if (interpreter->Invoke() != kTfLiteOk) {
       LOG(ERROR) << "Failed to invoke tflite!";
       exit(-1);
     }
   }
-  gettimeofday(&stop_time, nullptr);
-  LOG(INFO) << "invoked";
-  LOG(INFO) << "average time: "
-            << (get_us(stop_time) - get_us(start_time)) /
-                   (settings->loop_count * 1000)
-            << " ms";
+  //gettimeofday(&stop_time, nullptr);
+  //LOG(INFO) << "invoked";
+  //LOG(INFO) << "average time: "
+    //        << (get_us(stop_time) - get_us(start_time)) /
+      //             (settings->loop_count * 1000)
+        //    << " ms";
 
   if (settings->profiling) {
     profiler->StopProfiling();
@@ -403,10 +415,14 @@ void RunInference(Settings* settings,
     const int index = result.second;
     LOG(INFO) << confidence << ": " << index << " " << labels[index];
   }
-
+  updateSystemStateToProcessed();
+ }
   // Destory the interpreter earlier than delegates objects.
   interpreter.reset();
 }
+
+
+
 
 void display_usage(const DelegateProviders& delegate_providers) {
   LOG(INFO)
@@ -499,7 +515,7 @@ int Main(int argc, char** argv) {
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
       case 'i':
-        s.input_bmp_name = optarg;
+        //s.input_bmp_name = optarg;
         break;
       case 'j':
         s.hexagon_delegate = optarg;
