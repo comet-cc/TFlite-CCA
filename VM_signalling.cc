@@ -8,9 +8,7 @@
 namespace tflite {
 namespace label_image {
 
-static inline std::string filePath = "/root/shared_with_realm/signalling.txt";
-
-std::string checkSystemStateAndGetFilename() {
+std::string checkSystemStateAndGetFilename(std::string filePath) {
     while (true) {
         std::ifstream file(filePath);
         std::string line;
@@ -35,12 +33,10 @@ std::string checkSystemStateAndGetFilename() {
     }
 }
 
-void updateSystemStateToProcessed() {
+void updateSystemStateToProcessed(std::string filePath) {
     std::ofstream file(filePath, std::ios::out | std::ios::trunc); // Overwrite the file
     if (file.is_open()) {
         file << "systemState: processed\n";
-        // Keep the fileName line to avoid removing the fileName info
-   //     file << "fileName: \n"; // You might want to keep the filename or clear it based on your requirements
     } else {
         std::cerr << "Unable to open file for writing." << std::endl;
     }

@@ -211,7 +211,6 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
   }
   std::unique_ptr<tflite::Interpreter> interpreter;
   std::unique_ptr<tflite::FlatBufferModel> model;
-  //std::unique_ptr<tflite::Interpreter> interpreter;
   model = tflite::FlatBufferModel::BuildFromFile(settings->model_name.c_str());
   if (!model) {
     LOG(ERROR) << "Failed to mmap model " << settings->model_name;
@@ -256,11 +255,10 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
   int image_width = 224;
   int image_height = 224;
   int image_channels = 3;
-  std::string input_address;
-  for (int i = 1; i <= 40; i++){
+  for (int i = 1; i <= settings->number_of_images; i++){
 
   LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
-  settings->input_bmp_name = checkSystemStateAndGetFilename();
+  settings->input_bmp_name = checkSystemStateAndGetFilename(settings->signalling_addr);
 
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
@@ -415,7 +413,7 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
     const int index = result.second;
     LOG(INFO) << confidence << ": " << index << " " << labels[index];
   }
-  updateSystemStateToProcessed();
+  updateSystemStateToProcessed(settings->signalling_addr);
  }
   // Destory the interpreter earlier than delegates objects.
   interpreter.reset();
@@ -479,13 +477,15 @@ int Main(int argc, char** argv) {
         {"gl_backend", required_argument, nullptr, 'g'},
         {"hexagon_delegate", required_argument, nullptr, 'j'},
         {"xnnpack_delegate", required_argument, nullptr, 'x'},
-        {"help", no_argument, nullptr, 'h'},
-        {nullptr, 0, nullptr, 0}};
+	{"Address of signalling file", required_argument, nullptr, 'S'},
+        {"Number of images", required_argument, nullptr, 'N'},
+	{"help", no_argument, nullptr, 'h'},
+	{nullptr, 0, nullptr, 0}};
 
     /* getopt_long stores the option index here. */
     int option_index = 0;
 
-    c = getopt_long(argc, argv, "a:b:c:d:e:f:g:i:j:l:m:p:r:s:t:v:w:x:h",
+    c = getopt_long(argc, argv, "a:b:c:d:e:f:g:i:j:l:m:p:r:s:t:v:w:x:S:N:h",
                     long_options, &option_index);
 
     /* Detect the end of the options. */
@@ -553,6 +553,12 @@ int Main(int argc, char** argv) {
         s.xnnpack_delegate =
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
+      case 'S':
+        s.signalling_addr = optarg;
+	break;
+      case 'N':
+        s.number_of_images = strtol(optarg, nullptr, 10);
+	break;
       case 'h':
       case '?':
         /* getopt_long already printed an error message. */

@@ -21,4 +21,4 @@ cd ./tensorflow_src
 bazel build -c opt --config=elinux_aarch64 \
   //tensorflow/lite/examples/label_image:realm_inference
 ```
-After succesfully building the binary, you can find it in: bazel-bin/tensorflow/lite/examples/label_image/realm_inference
+After succesfully building the binary, you can find it at: bazel-bin/tensorflow/lite/examples/label_image/realm_inference

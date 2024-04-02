@@ -44,6 +44,8 @@ struct Settings {
   int number_of_results = 5;
   int max_profiling_buffer_entries = 1024;
   int number_of_warmup_runs = 2;
+  string signalling_addr = "/root/shared_with_realm/signalling.txt";
+  int number_of_images = 40;
 };
 
 }  // namespace label_image

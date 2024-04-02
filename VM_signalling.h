@@ -6,8 +6,8 @@ namespace tflite {
 namespace label_image {
 
 // Example function declaration
-std::string checkSystemStateAndGetFilename();
-void updateSystemStateToProcessed();
+std::string checkSystemStateAndGetFilename(std::string filePath);
+void updateSystemStateToProcessed(std::string filePath);
 }  // namespace label_image
 }  // namespace tflite
 
