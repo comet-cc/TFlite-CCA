@@ -443,6 +443,8 @@ void display_usage(const DelegateProviders& delegate_providers) {
       << "\t--verbose, -v: [0|1] print more information\n"
       << "\t--warmup_runs, -w: number of warmup runs\n"
       << "\t--xnnpack_delegate, -x [0:1]: xnnpack delegate\n"
+      << "t--Address of signalling file, -S: Address to signalling.txt file\n"
+      << "t--Number of images, -N: Number of images to be expected\n"
       << "\t--help, -h: Print this help message\n";
 }
 

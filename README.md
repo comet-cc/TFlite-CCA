@@ -1,24 +1,21 @@
+In this repository we provide the guide and necessary files to build a binary which is able to generate inference result given a tensorflow lite model and an image. We used the binary in another project to simulate machine learning inference on a realm virtual machine (look at [GuaranTEE](https://github.com/comet-cc/GuaranTEE)) but, it is executable in any linux environment on Arm64 architecture.
 
+First, you need to install bazel [Installing Bazel](https://bazel.build/install) and tensorflow [Install TensorFlow 2](https://www.tensorflow.org/install).
 
-### 1 Install Bazel using [Installing Bazel](https://bazel.build/install) 
-
-### 2 Install TensorFlow using [Install TensorFlow 2](https://www.tensorflow.org/install)
-
-### 3 Clone TensorFlow repository
+### Clone TensorFlow repository
 ```
 git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
 ```
-### 4 Place our repository into TensorFlow repository
+### Place our repository into TensorFlow repository
 ```
 sudo rm -r tensorflow_src/tensorflow/lite/examples/label_image/ 
 git clone https://github.com/comet-cc/TFlite_CCA.git ./tensorflow_src/tensorflow/lite/examples/label_image
 ```
-
-### 5 Cross compile the source code
+### Build source code
 
 ```
 cd ./tensorflow_src
 bazel build -c opt --config=elinux_aarch64 \
   //tensorflow/lite/examples/label_image:realm_inference
 ```
-After succesfully building the binary, you can find it at: bazel-bin/tensorflow/lite/examples/label_image/realm_inference
+After succesfully building, you can find `realm_inference` binary at: `bazel-bin/tensorflow/lite/examples/label_image/`
