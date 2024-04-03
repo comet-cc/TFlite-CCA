@@ -9,7 +9,7 @@ git clone https://github.com/tensorflow/tensorflow.git tensorflow_src
 ### Place our repository into TensorFlow repository
 ```
 sudo rm -r tensorflow_src/tensorflow/lite/examples/label_image/ 
-git clone https://github.com/comet-cc/TFlite_CCA.git ./tensorflow_src/tensorflow/lite/examples/label_image
+git clone https://github.com/comet-cc/TFlite-CCA.git ./tensorflow_src/tensorflow/lite/examples/label_image
 ```
 ### Build source code
 
