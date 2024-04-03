@@ -1,4 +1,4 @@
-In this repository we provide the guide and necessary files to build a binary which is able to generate inference result given a tensorflow lite model and an image. We used the binary in another project to simulate machine learning inference on a realm virtual machine (look at [GuaranTEE](https://github.com/comet-cc/GuaranTEE)) but, it is executable in any linux environment on Arm64 architecture.
+In this repository we provide the guide and necessary files to build a binary which is able to generate inference result given a tensorflow lite model and an image. We used the binary in another project to simulate machine learning inference on a realm virtual machine (look at [GuaranTEE](https://github.com/comet-cc/GuaranTEE)) but, it is executable in any linux environment on Arm64 architecture. 
 
 First, you need to install bazel [Installing Bazel](https://bazel.build/install) and tensorflow [Install TensorFlow 2](https://www.tensorflow.org/install).
 
