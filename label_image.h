@@ -40,12 +40,13 @@ struct Settings {
   tflite::FlatBufferModel* model;
   string input_bmp_name = "./grace_hopper.bmp";
   string labels_file_name = "./labels.txt";
-  int number_of_threads = 4;
+  int number_of_threads = 1;
   int number_of_results = 5;
   int max_profiling_buffer_entries = 1024;
   int number_of_warmup_runs = 2;
-  string signalling_addr = "/root/shared_with_realm/signalling.txt";
-  int number_of_images = 40;
+  string signalling_addr;
+  int number_of_images = 1;
+  int trace_flag = 0;
 };
 
 }  // namespace label_image

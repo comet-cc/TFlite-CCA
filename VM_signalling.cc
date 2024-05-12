@@ -5,9 +5,6 @@
 #include <chrono>
 #include "tensorflow/lite/examples/label_image/VM_signalling.h"
 
-namespace tflite {
-namespace label_image {
-
 std::string checkSystemStateAndGetFilename(std::string filePath) {
     while (true) {
         std::ifstream file(filePath);
@@ -42,5 +39,3 @@ void updateSystemStateToProcessed(std::string filePath) {
     }
 }
 
-}
-}

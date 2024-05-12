@@ -15,6 +15,7 @@ limitations under the License.
 
 #include "tensorflow/lite/examples/label_image/label_image.h"
 #include "tensorflow/lite/examples/label_image/VM_signalling.h"
+#include "tensorflow/lite/examples/label_image/benchmark.h"
 
 #include <fcntl.h>      // NOLINT(build/include_order)
 #include <getopt.h>     // NOLINT(build/include_order)
@@ -205,6 +206,13 @@ void PrintProfilingInfo(const profiling::ProfileEvent* e,
 }
 
 void RunInference(Settings* settings, const DelegateProviders& delegate_providers) {
+
+  if (settings->trace_flag == 1){
+	CCA_TRACE_START;
+	CCA_MARKER_INFERENCE_INITIALISATION_START;
+        CCA_TRACE_STOP;
+  }
+
   if (!settings->model_name.c_str()) {
     LOG(ERROR) << "no model file name";
     exit(-1);
@@ -247,23 +255,46 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
                   << interpreter->tensor(i)->params.zero_point;
     }
   }
-  //LOG(INFO) << "Number of threads" << settings->number_of_threads;
+  LOG(INFO) << "Number of threads" << settings->number_of_threads;
   if (settings->number_of_threads != -1) {
     interpreter->SetNumThreads(settings->number_of_threads);
   }
-  //LOG(INFO) << "Number of threads1 " << settings->number_of_threads;
   int image_width = 224;
   int image_height = 224;
   int image_channels = 3;
-  for (int i = 1; i <= settings->number_of_images; i++){
+  if (settings->trace_flag == 1){
+	CCA_TRACE_START;
+	CCA_MARKER_INFERENCE_INITIALISATION_END;
+        CCA_TRACE_STOP;
+  }
 
-  LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
-  settings->input_bmp_name = checkSystemStateAndGetFilename(settings->signalling_addr);
+  for (int i = 1; i <= settings->number_of_images; i++){
+  if (!settings->signalling_addr.empty()){
+    if (settings->trace_flag == 1){
+	CCA_TRACE_START;
+	CCA_MARKER_READ_INPUT_START;
+        CCA_TRACE_STOP;
+    }
+
+    LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
+    settings->input_bmp_name = checkSystemStateAndGetFilename(settings->signalling_addr);
+  if (settings->trace_flag == 1){
+	CCA_TRACE_START;
+	CCA_MARKER_READ_INPUT_STOP;
+        CCA_TRACE_STOP;
+  }
+
+  }
+    if (settings->trace_flag == 1){
+	CCA_TRACE_START;
+	CCA_MARKER_NEW_INFERENCE_START;
+        CCA_TRACE_STOP;
+    }
 
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
   LOG(INFO) << "settings->input_bmp_name: " << settings->input_bmp_name;
-  
+
   int input = interpreter->inputs()[0];
   if (settings->verbose) LOG(INFO) << "input: " << input;
 
@@ -274,7 +305,6 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
     LOG(INFO) << "number of inputs: " << inputs.size();
     LOG(INFO) << "number of outputs: " << outputs.size();
   }
-
   auto profiler = std::make_unique<profiling::Profiler>(
       settings->max_profiling_buffer_entries);
   interpreter->SetProfiler(profiler.get());
@@ -285,7 +315,7 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
     //LOG(INFO) << "delegateee";
     const auto delegate_name = delegate.provider->GetName();
     //LOG(INFO) << "getname";
-    if (interpreter->ModifyGraphWithDelegate(std::move(delegate.delegate)) !=
+  if (interpreter->ModifyGraphWithDelegate(std::move(delegate.delegate)) !=
         kTfLiteOk) {
       LOG(ERROR) << "Failed to apply " << delegate_name << " delegate.";
       exit(-1);
@@ -307,7 +337,7 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
   int wanted_height = dims->data[1];
   int wanted_width = dims->data[2];
   int wanted_channels = dims->data[3];
-
+  
   settings->input_type = interpreter->tensor(input)->type;
   switch (settings->input_type) {
     LOG(INFO) << "Resizing";
@@ -331,7 +361,6 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
                  << interpreter->tensor(input)->type << " yet";
       exit(-1);
   }
-
   if (settings->profiling) profiler->StartProfiling();
 //  for (int i = 0; i < settings->number_of_warmup_runs; i++) {
  //     LOG(INFO) << "Warmup";
@@ -355,7 +384,6 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
     //        << (get_us(stop_time) - get_us(start_time)) /
       //             (settings->loop_count * 1000)
         //    << " ms";
-
   if (settings->profiling) {
     profiler->StopProfiling();
     auto profile_events = profiler->GetProfileEvents();
@@ -374,7 +402,6 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
   const float threshold = 0.001f;
 
   std::vector<std::pair<float, int>> top_results;
-
   int output = interpreter->outputs()[0];
   TfLiteIntArray* output_dims = interpreter->tensor(output)->dims;
   // assume output dims to be something like (1, 1, ... ,size)
@@ -400,20 +427,50 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
                  << interpreter->tensor(output)->type << " yet";
       exit(-1);
   }
-
   std::vector<string> labels;
   size_t label_count;
 
   if (ReadLabelsFile(settings->labels_file_name, &labels, &label_count) !=
       kTfLiteOk)
     exit(-1);
+  if (settings->trace_flag == 1){
+       CCA_TRACE_START;
+       CCA_MARKER_NEW_INFERENCE_STOP;
+       CCA_TRACE_STOP;
+  }
+
+  if (settings->trace_flag == 1){
+       CCA_TRACE_START;
+       CCA_MARKER_WRITE_OUTPUT_START;
+       CCA_TRACE_STOP;
+  }
 
   for (const auto& result : top_results) {
     const float confidence = result.first;
     const int index = result.second;
     LOG(INFO) << confidence << ": " << index << " " << labels[index];
   }
-  updateSystemStateToProcessed(settings->signalling_addr);
+
+  if (settings->trace_flag == 1){
+       CCA_TRACE_START;
+       CCA_MARKER_WRITE_OUTPUT_STOP;
+       CCA_TRACE_STOP;
+  }
+
+  if (!settings->signalling_addr.empty()){
+    if (settings->trace_flag == 1){
+       CCA_TRACE_START;
+       CCA_MARKER_UPDATE_STATE_START;
+       CCA_TRACE_STOP;
+    }
+    updateSystemStateToProcessed(settings->signalling_addr);
+
+    if (settings->trace_flag == 1){
+       CCA_TRACE_START;
+       CCA_MARKER_UPDATE_STATE_STOP;
+       CCA_TRACE_STOP;
+    }
+  }
  }
   // Destory the interpreter earlier than delegates objects.
   interpreter.reset();
@@ -449,6 +506,7 @@ void display_usage(const DelegateProviders& delegate_providers) {
 }
 
 int Main(int argc, char** argv) {
+
   DelegateProviders delegate_providers;
   bool parse_result = delegate_providers.InitFromCmdlineArgs(
       &argc, const_cast<const char**>(argv));
@@ -481,13 +539,14 @@ int Main(int argc, char** argv) {
         {"xnnpack_delegate", required_argument, nullptr, 'x'},
 	{"Address of signalling file", required_argument, nullptr, 'S'},
         {"Number of images", required_argument, nullptr, 'N'},
+	{"Enable trace", required_argument, nullptr, 'T'},
 	{"help", no_argument, nullptr, 'h'},
 	{nullptr, 0, nullptr, 0}};
 
     /* getopt_long stores the option index here. */
     int option_index = 0;
 
-    c = getopt_long(argc, argv, "a:b:c:d:e:f:g:i:j:l:m:p:r:s:t:v:w:x:S:N:h",
+    c = getopt_long(argc, argv, "a:b:c:d:e:f:g:i:j:l:m:p:r:s:t:v:w:x:S:N:T:h",
                     long_options, &option_index);
 
     /* Detect the end of the options. */
@@ -517,7 +576,7 @@ int Main(int argc, char** argv) {
             strtol(optarg, nullptr, 10);  // NOLINT(runtime/deprecated_fn)
         break;
       case 'i':
-        //s.input_bmp_name = optarg;
+        s.input_bmp_name = optarg;
         break;
       case 'j':
         s.hexagon_delegate = optarg;
@@ -561,6 +620,9 @@ int Main(int argc, char** argv) {
       case 'N':
         s.number_of_images = strtol(optarg, nullptr, 10);
 	break;
+      case 'T':
+	s.trace_flag = strtol(optarg, nullptr, 10);
+	break;
       case 'h':
       case '?':
         /* getopt_long already printed an error message. */
@@ -570,9 +632,30 @@ int Main(int argc, char** argv) {
         exit(-1);
     }
   }
-
   delegate_providers.MergeSettingsIntoParams(s);
+
+  CCA_BENCHMARK_INIT;
+  if (s.trace_flag == 1){
+      CCA_TRACE_START;
+      CCA_MARKER_START;
+      CCA_TRACE_STOP;
+  }
+
+  if (s.trace_flag == 2)
+      CCA_TRACE_START;
+
   RunInference(&s, delegate_providers);
+
+  if (s.trace_flag == 1){
+      CCA_TRACE_START;
+      CCA_MARKER_END;
+      CCA_TRACE_STOP;
+      LOG(INFO) <<  "This is the end of tracing";
+  }
+  if (s.trace_flag == 2){
+      CCA_TRACE_STOP;
+      LOG(INFO) <<  "This is the end of tracing";
+  }
   return 0;
 }
 

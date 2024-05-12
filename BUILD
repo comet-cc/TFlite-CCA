@@ -55,6 +55,7 @@ cc_library(
         "bitmap_helpers_impl.h",
 	"VM_signalling.h",
         "label_image.h",
+	"benchmark.h",
         "log.h",
     ],
     deps = [
