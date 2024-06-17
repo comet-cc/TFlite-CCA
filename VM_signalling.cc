@@ -18,6 +18,7 @@ std::string checkSystemStateAndGetFilename(std::string filePath) {
             } else if (line.find("fileName:") != std::string::npos) {
                 fileName = line.substr(line.find(":") + 2);
             }
+	 std::cout << "Waiting for signalling file..." << std::endl; 
         }
 
         if (state == "query") {

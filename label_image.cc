@@ -1,3 +1,4 @@
+
 /* Copyright 2017 The TensorFlow Authors. All Rights Reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -209,7 +210,7 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
 
   if (settings->trace_flag == 1){
 	CCA_TRACE_START;
-	CCA_MARKER_INFERENCE_INITIALISATION_START;
+	CCA_MARKER_INFERENCE_INITIALISATION_START();
         CCA_TRACE_STOP;
   }
 
@@ -264,32 +265,29 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
   int image_channels = 3;
   if (settings->trace_flag == 1){
 	CCA_TRACE_START;
-	CCA_MARKER_INFERENCE_INITIALISATION_END;
+	CCA_MARKER_INFERENCE_INITIALISATION_END();
         CCA_TRACE_STOP;
   }
 
   for (int i = 1; i <= settings->number_of_images; i++){
-  if (!settings->signalling_addr.empty()){
-    if (settings->trace_flag == 1){
+      if (settings->trace_flag == 1){
 	CCA_TRACE_START;
-	CCA_MARKER_READ_INPUT_START;
+	CCA_MARKER_READ_INPUT_ADDR_START();
         CCA_TRACE_STOP;
-    }
+      }
 
-    LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
-    settings->input_bmp_name = checkSystemStateAndGetFilename(settings->signalling_addr);
-  if (settings->trace_flag == 1){
-	CCA_TRACE_START;
-	CCA_MARKER_READ_INPUT_STOP;
-        CCA_TRACE_STOP;
-  }
+      if (!settings->signalling_addr.empty()){
 
-  }
-    if (settings->trace_flag == 1){
+        LOG(INFO) << "checkSystemStateAndGetFilename-------------------------------- ";
+        settings->input_bmp_name = checkSystemStateAndGetFilename(settings->signalling_addr);
+
+      }
+      if (settings->trace_flag == 1){
 	CCA_TRACE_START;
-	CCA_MARKER_NEW_INFERENCE_START;
+	CCA_MARKER_READ_INPUT_ADDR_STOP();
+        CCA_MARKER_READ_INPUT_START();
         CCA_TRACE_STOP;
-    }
+      }
 
   std::vector<uint8_t> in = read_bmp(settings->input_bmp_name, &image_width,
                                      &image_height, &image_channels, settings);
@@ -435,13 +433,22 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
     exit(-1);
   if (settings->trace_flag == 1){
        CCA_TRACE_START;
-       CCA_MARKER_NEW_INFERENCE_STOP;
+       CCA_MARKER_NEW_INFERENCE_STOP();
        CCA_TRACE_STOP;
+  }
+  if (settings->trace_flag == 4){
+       CCA_TRACE_START;
+       CCA_TRACE_STOP;
+  }
+  
+  if (settings->trace_flag == 3){
+       CCA_TRACE_STOP;
+       LOG(INFO) << "End of Trace (trace_flag = 3)";
   }
 
   if (settings->trace_flag == 1){
        CCA_TRACE_START;
-       CCA_MARKER_WRITE_OUTPUT_START;
+       CCA_MARKER_WRITE_OUTPUT_START();
        CCA_TRACE_STOP;
   }
 
@@ -453,21 +460,21 @@ void RunInference(Settings* settings, const DelegateProviders& delegate_provider
 
   if (settings->trace_flag == 1){
        CCA_TRACE_START;
-       CCA_MARKER_WRITE_OUTPUT_STOP;
+       CCA_MARKER_WRITE_OUTPUT_STOP();
        CCA_TRACE_STOP;
   }
 
   if (!settings->signalling_addr.empty()){
     if (settings->trace_flag == 1){
        CCA_TRACE_START;
-       CCA_MARKER_UPDATE_STATE_START;
+       CCA_MARKER_UPDATE_STATE_START();
        CCA_TRACE_STOP;
     }
     updateSystemStateToProcessed(settings->signalling_addr);
 
     if (settings->trace_flag == 1){
        CCA_TRACE_START;
-       CCA_MARKER_UPDATE_STATE_STOP;
+       CCA_MARKER_UPDATE_STATE_STOP();
        CCA_TRACE_STOP;
     }
   }
@@ -633,11 +640,13 @@ int Main(int argc, char** argv) {
     }
   }
   delegate_providers.MergeSettingsIntoParams(s);
+  if (s.trace_flag != 4){
+     // CCA_BENCHMARK_INIT;
+  }
 
-  CCA_BENCHMARK_INIT;
   if (s.trace_flag == 1){
       CCA_TRACE_START;
-      CCA_MARKER_START;
+      CCA_MARKER_START();
       CCA_TRACE_STOP;
   }
 
@@ -648,7 +657,7 @@ int Main(int argc, char** argv) {
 
   if (s.trace_flag == 1){
       CCA_TRACE_START;
-      CCA_MARKER_END;
+      CCA_MARKER_END();
       CCA_TRACE_STOP;
       LOG(INFO) <<  "This is the end of tracing";
   }

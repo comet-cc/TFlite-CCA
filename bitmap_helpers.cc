@@ -25,6 +25,7 @@ limitations under the License.
 #include <string>
 
 #include "tensorflow/lite/examples/label_image/label_image.h"
+#include "tensorflow/lite/examples/label_image/benchmark.h"  
 #include "tensorflow/lite/examples/label_image/log.h"
 #include "tsl/platform/ctstring_internal.h"
 
@@ -78,6 +79,7 @@ std::vector<uint8_t> read_bmp(const std::string& input_bmp_name, int* width,
   int begin, end;
 
   std::ifstream file(input_bmp_name, std::ios::in | std::ios::binary);
+
   if (!file) {
     LOG(FATAL) << "input file " << input_bmp_name << " not found";
     exit(-1);
@@ -93,6 +95,23 @@ std::vector<uint8_t> read_bmp(const std::string& input_bmp_name, int* width,
   std::vector<uint8_t> img_bytes(len);
   file.seekg(0, std::ios::beg);
   file.read(reinterpret_cast<char*>(img_bytes.data()), len);
+
+  if (s->trace_flag == 1){
+     CCA_TRACE_START;
+     CCA_MARKER_READ_INPUT_STOP();
+     CCA_MARKER_NEW_INFERENCE_START();
+     CCA_TRACE_STOP;
+  }
+  if (s->trace_flag == 4){
+     CCA_TRACE_START;
+     CCA_TRACE_STOP;
+  }
+
+  if (s->trace_flag == 3){
+	CCA_TRACE_START;
+	LOG(INFO) << "beginning of Trace (trace_flag = 3)";
+  }
+
   const int32_t header_size =
       TF_le32toh(*(reinterpret_cast<const int32_t*>(img_bytes.data() + 10)));
   *width =
