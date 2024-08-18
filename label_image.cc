@@ -665,6 +665,12 @@ int Main(int argc, char** argv) {
       CCA_TRACE_STOP;
       LOG(INFO) <<  "This is the end of tracing";
   }
+  if (s.trace_flag == 1){
+      CCA_TRACE_START;
+      CCA_MARKER_END();
+      CCA_TRACE_STOP;
+  }
+
   return 0;
 }
 
